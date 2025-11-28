@@ -9,26 +9,37 @@ interface BookCardProps {
 }
 
 export const BookCard: React.FC<BookCardProps> = ({ book, onClick, variant = 'cover' }) => {
-  // Determine text color based on background brightness approximation (simple heuristic)
-  const isDark = (color: string) => {
-    const c = color.substring(1);      // strip #
-    const rgb = parseInt(c, 16);   // convert rrggbb to decimal
-    const r = (rgb >> 16) & 0xff;  // extract red
-    const g = (rgb >>  8) & 0xff;  // extract green
-    const b = (rgb >>  0) & 0xff;  // extract blue
-    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b; // per ITU-R BT.709
+  // Determine text color based on background brightness approximation
+  const isDark = (color?: string) => {
+    if (!color) return true; // Default to dark background logic if undefined
+    
+    let c = color.replace('#', '');
+    if (c.length === 3) {
+        c = c.split('').map(char => char + char).join('');
+    }
+    if (c.length !== 6) return true; // Fallback
+
+    const rgb = parseInt(c, 16);   
+    if (isNaN(rgb)) return true; // Fallback
+
+    const r = (rgb >> 16) & 0xff;
+    const g = (rgb >>  8) & 0xff;
+    const b = (rgb >>  0) & 0xff;
+    const luma = 0.2126 * r + 0.7152 * g + 0.0722 * b; 
     return luma < 128;
   };
 
-  const textColor = book.coverColor && isDark(book.coverColor) ? 'text-library-paper' : 'text-library-wood';
-  const borderColor = book.coverColor && isDark(book.coverColor) ? 'border-white/20' : 'border-black/10';
+  const bgColor = book.coverColor || '#5D4037';
+  const darkBackground = isDark(bgColor);
+  const textColor = darkBackground ? 'text-library-paper' : 'text-library-wood';
+  const borderColor = darkBackground ? 'border-white/20' : 'border-black/10';
 
   if (variant === 'spine') {
      return (
         <div 
             onClick={() => onClick(book)}
             className="group relative cursor-pointer flex-shrink-0 mx-1 h-64 w-12 rounded-sm border-l border-r border-white/10 flex flex-col items-center justify-center p-2 transition-all duration-300 hover:-translate-y-4 hover:shadow-xl"
-            style={{ backgroundColor: book.coverColor || '#5D4037' }}
+            style={{ backgroundColor: bgColor }}
         >
             <div className={`writing-vertical-rl transform rotate-180 text-xs font-serif font-bold tracking-wider truncate h-4/5 ${textColor}`}>
                 {book.title}
@@ -46,7 +57,7 @@ export const BookCard: React.FC<BookCardProps> = ({ book, onClick, variant = 'co
     >
       <div 
         className={`book-cover-3d relative aspect-[2/3] rounded-r-md shadow-2xl transition-all duration-300 border-l-4 border-l-white/10 overflow-hidden flex flex-col justify-between p-4 ${textColor}`}
-        style={{ backgroundColor: book.coverColor || '#5D4037' }}
+        style={{ backgroundColor: bgColor }}
       >
         {/* Cover Texture Overlay */}
         <div className="absolute inset-0 bg-[url('https://www.transparenttextures.com/patterns/leather.png')] opacity-30 mix-blend-multiply pointer-events-none"></div>

@@ -25,6 +25,19 @@ const bookSchema = {
   }
 };
 
+const cleanJsonText = (text: string): string => {
+  if (!text) return "[]";
+  // Remove markdown code blocks if present (e.g., ```json ... ```)
+  let clean = text.replace(/```json/g, '').replace(/```/g, '');
+  return clean.trim();
+};
+
+const cleanJsonTextObject = (text: string): string => {
+  if (!text) return "{}";
+  let clean = text.replace(/```json/g, '').replace(/```/g, '');
+  return clean.trim();
+};
+
 export const searchBooks = async (query: string): Promise<Book[]> => {
   try {
     const response = await ai.models.generateContent({
@@ -39,7 +52,7 @@ export const searchBooks = async (query: string): Promise<Book[]> => {
       }
     });
 
-    const jsonText = response.text || "[]";
+    const jsonText = cleanJsonText(response.text || "[]");
     return JSON.parse(jsonText) as Book[];
   } catch (error) {
     console.error("Gemini search error:", error);
@@ -57,7 +70,7 @@ export const getCuratedShelf = async (genre: string): Promise<Book[]> => {
         responseSchema: bookSchema,
       }
     });
-    const jsonText = response.text || "[]";
+    const jsonText = cleanJsonText(response.text || "[]");
     return JSON.parse(jsonText) as Book[];
   } catch (error) {
     console.error("Gemini shelf error:", error);
@@ -85,7 +98,7 @@ export const analyzeBook = async (bookTitle: string, author: string): Promise<{ 
       }
     });
 
-    const jsonText = response.text || "{}";
+    const jsonText = cleanJsonTextObject(response.text || "{}");
     return JSON.parse(jsonText);
   } catch (error) {
     console.error("Gemini analysis error:", error);
