@@ -27,31 +27,36 @@ const bookSchema = {
 
 const cleanJsonText = (text: string): string => {
   if (!text) return "[]";
-  // Robust extraction: find the first '[' and last ']' to ignore conversational preamble/postscript
-  const start = text.indexOf('[');
-  const end = text.lastIndexOf(']');
+  
+  // First, remove any markdown code block indicators
+  let clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  
+  // Aggressively find the start and end of the JSON array
+  const start = clean.indexOf('[');
+  const end = clean.lastIndexOf(']');
   
   if (start !== -1 && end !== -1 && end > start) {
-      return text.substring(start, end + 1);
+      return clean.substring(start, end + 1);
   }
   
-  // Fallback: try to just strip markdown if specific brackets aren't found (unlikely for array)
-  let clean = text.replace(/```json/g, '').replace(/```/g, '');
-  return clean.trim();
+  // If no array brackets found, return empty array to prevent JSON.parse crash
+  console.warn("No JSON array found in response:", text);
+  return "[]";
 };
 
 const cleanJsonTextObject = (text: string): string => {
   if (!text) return "{}";
-  // Robust extraction: find the first '{' and last '}'
-  const start = text.indexOf('{');
-  const end = text.lastIndexOf('}');
+  
+  let clean = text.replace(/```json/g, '').replace(/```/g, '').trim();
+  
+  const start = clean.indexOf('{');
+  const end = clean.lastIndexOf('}');
   
   if (start !== -1 && end !== -1 && end > start) {
-      return text.substring(start, end + 1);
+      return clean.substring(start, end + 1);
   }
   
-  let clean = text.replace(/```json/g, '').replace(/```/g, '');
-  return clean.trim();
+  return "{}";
 };
 
 export const searchBooks = async (query: string): Promise<Book[]> => {
@@ -59,6 +64,7 @@ export const searchBooks = async (query: string): Promise<Book[]> => {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
       contents: `Recommend 8 books based on this search query: "${query}". 
+                 Return ONLY raw JSON. Do not include markdown formatting or conversational text.
                  If the query is a specific book, return similar books. 
                  Ensure the coverColor is a rich, aesthetic hex code.`,
       config: {
@@ -80,7 +86,7 @@ export const getCuratedShelf = async (genre: string): Promise<Book[]> => {
   try {
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `List 5 defining or popular books for the genre/theme: "${genre}".`,
+      contents: `List 5 defining or popular books for the genre/theme: "${genre}". Return ONLY raw JSON.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: bookSchema,
@@ -107,7 +113,7 @@ export const analyzeBook = async (bookTitle: string, author: string): Promise<{ 
 
     const response = await ai.models.generateContent({
       model: "gemini-2.5-flash",
-      contents: `Provide a detailed analysis for the book "${bookTitle}" by ${author}.`,
+      contents: `Provide a detailed analysis for the book "${bookTitle}" by ${author}. Return ONLY raw JSON.`,
       config: {
         responseMimeType: "application/json",
         responseSchema: schema,
