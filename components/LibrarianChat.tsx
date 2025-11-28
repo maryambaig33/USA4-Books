@@ -29,7 +29,9 @@ export const LibrarianChat: React.FC = () => {
     setIsLoading(true);
 
     // Format history for API
-    const history = messages.map(m => ({
+    // We remove the first message (index 0) because it is the client-side greeting (Model).
+    // The Gemini API requires the history to start with a User message (or be empty).
+    const history = messages.slice(1).map(m => ({
         role: m.role,
         parts: [{ text: m.text }]
     }));
