@@ -27,13 +27,29 @@ const bookSchema = {
 
 const cleanJsonText = (text: string): string => {
   if (!text) return "[]";
-  // Remove markdown code blocks if present (e.g., ```json ... ```)
+  // Robust extraction: find the first '[' and last ']' to ignore conversational preamble/postscript
+  const start = text.indexOf('[');
+  const end = text.lastIndexOf(']');
+  
+  if (start !== -1 && end !== -1 && end > start) {
+      return text.substring(start, end + 1);
+  }
+  
+  // Fallback: try to just strip markdown if specific brackets aren't found (unlikely for array)
   let clean = text.replace(/```json/g, '').replace(/```/g, '');
   return clean.trim();
 };
 
 const cleanJsonTextObject = (text: string): string => {
   if (!text) return "{}";
+  // Robust extraction: find the first '{' and last '}'
+  const start = text.indexOf('{');
+  const end = text.lastIndexOf('}');
+  
+  if (start !== -1 && end !== -1 && end > start) {
+      return text.substring(start, end + 1);
+  }
+  
   let clean = text.replace(/```json/g, '').replace(/```/g, '');
   return clean.trim();
 };
@@ -117,7 +133,7 @@ export const chatWithLibrarian = async (history: {role: string, parts: {text: st
         });
         
         const result = await chat.sendMessage({ message });
-        return result.text;
+        return result.text || "I apologize, I couldn't find the words.";
     } catch (e) {
         console.error("Chat error", e);
         return "I apologize, dear patron. I seem to have lost my train of thought. Could you repeat that?";
